@@ -299,11 +299,23 @@ namespace GrafikaKomputerowa
 
         private void Line_Click(object sender, EventArgs e)
         {
+            if (selectedShape != null)
+            {
+                selectedShape = null;
+                RedrawAll(canvas); // odśwież widok bez uchwytów
+            }
+
             currentTool = ToolType.Line;
         }
         
         private void Rectangle_Click(object sender, EventArgs e)
         {
+            if (selectedShape != null)
+            {
+                selectedShape = null;
+                RedrawAll(canvas); // odśwież widok bez uchwytów
+            }
+
             currentTool = ToolType.Rectangle;
         }
 
@@ -311,12 +323,16 @@ namespace GrafikaKomputerowa
         {
             try
             {
+                
 
                 Point StartManual, EndManual;
                 int x1 = int.Parse(x1TextBox.Text);
                 int y1 = int.Parse(y1TextBox.Text);
                 int x2 = int.Parse(x2TextBox.Text);
                 int y2 = int.Parse(y2TextBox.Text);
+
+                
+
                 if (x1 < 0 || x2 < 0 || y1 < 0 || y2 < 0 || x1 >= canvas.Width || x2 >= canvas.Width || y1 >= canvas.Height || y2 >= canvas.Height)
                 {
                     MessageBox.Show("Współrzędne muszą mieścić się w obszarze rysunku.");
@@ -324,6 +340,15 @@ namespace GrafikaKomputerowa
                 }
                 StartManual = new Point(x1, y1);
                 EndManual = new Point(x2, y2);
+
+                if (selectedShape != null)
+                {
+                    selectedShape.Start = StartManual;
+                    selectedShape.End = EndManual;
+                    RedrawAll(canvas);
+                    return;
+                }
+
                 DrawShape(canvas, StartManual, EndManual);
                 pictureBox1.Image = canvas;
                 pictureBox1.Invalidate();
@@ -341,6 +366,12 @@ namespace GrafikaKomputerowa
 
         private void Circle_Click(object sender, EventArgs e)
         {
+            if (selectedShape != null)
+            {
+                selectedShape = null;
+                RedrawAll(canvas); // odśwież widok bez uchwytów
+            }
+
             currentTool = ToolType.Circle;
         }
 
@@ -349,18 +380,29 @@ namespace GrafikaKomputerowa
             currentTool = ToolType.Select;
         }
 
-
-        void ClearBitmap(Bitmap bmp)
+        private void ManualSelect_Click(object sender, EventArgs e)
         {
-            for (int x = 0; x < bmp.Width; x++)
+            try
             {
-                for (int y = 0; y < bmp.Height; y++)
+
+                int x = int.Parse(xselect.Text);
+                int y = int.Parse(yselect.Text);
+                Point testPoint = new Point(x, y);
+
+                if (x < 0 || y < 0 || x >= canvas.Width || y >= canvas.Height)
                 {
-                    bmp.SetPixel(x, y, Color.White);
+                    MessageBox.Show("Współrzędne muszą mieścić się w obszarze rysunku.");
+                    return;
                 }
+                selectedShape = shapes.LastOrDefault(s => s.HitTest(testPoint));
+
+                RedrawAll(canvas);
+            }
+            catch
+            {
+                MessageBox.Show("Wprowadź poprawne współrzędne do zaznaczenia.");
             }
         }
-
 
         void RedrawAll(Bitmap bmp)
         {
@@ -397,9 +439,6 @@ namespace GrafikaKomputerowa
             if (InHandle(shape.End)) return HandleType.End;
             return HandleType.None;
         }
-
-
-
 
     }
 

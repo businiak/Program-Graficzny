@@ -38,6 +38,9 @@
             this.y2TextBox = new System.Windows.Forms.TextBox();
             this.Draw = new System.Windows.Forms.Button();
             this.Select = new System.Windows.Forms.Button();
+            this.xselect = new System.Windows.Forms.TextBox();
+            this.yselect = new System.Windows.Forms.TextBox();
+            this.ManualSelect = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -132,11 +135,40 @@
             this.Select.UseVisualStyleBackColor = true;
             this.Select.Click += new System.EventHandler(this.Select_Click);
             // 
+            // xselect
+            // 
+            this.xselect.AccessibleName = "xselect";
+            this.xselect.Location = new System.Drawing.Point(481, 7);
+            this.xselect.Name = "xselect";
+            this.xselect.Size = new System.Drawing.Size(22, 20);
+            this.xselect.TabIndex = 10;
+            // 
+            // yselect
+            // 
+            this.yselect.AccessibleName = "yselect";
+            this.yselect.Location = new System.Drawing.Point(509, 7);
+            this.yselect.Name = "yselect";
+            this.yselect.Size = new System.Drawing.Size(22, 20);
+            this.yselect.TabIndex = 11;
+            // 
+            // ManualSelect
+            // 
+            this.ManualSelect.Location = new System.Drawing.Point(537, 5);
+            this.ManualSelect.Name = "ManualSelect";
+            this.ManualSelect.Size = new System.Drawing.Size(75, 23);
+            this.ManualSelect.TabIndex = 12;
+            this.ManualSelect.Text = "Man. Sel.";
+            this.ManualSelect.UseVisualStyleBackColor = true;
+            this.ManualSelect.Click += new System.EventHandler(this.ManualSelect_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(801, 601);
+            this.Controls.Add(this.ManualSelect);
+            this.Controls.Add(this.yselect);
+            this.Controls.Add(this.xselect);
             this.Controls.Add(this.Select);
             this.Controls.Add(this.Draw);
             this.Controls.Add(this.y2TextBox);
@@ -167,6 +199,9 @@
         private System.Windows.Forms.TextBox y2TextBox;
         private System.Windows.Forms.Button Draw;
         private System.Windows.Forms.Button Select;
+        private System.Windows.Forms.TextBox xselect;
+        private System.Windows.Forms.TextBox yselect;
+        private System.Windows.Forms.Button ManualSelect;
     }
 }
 
