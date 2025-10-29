@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Text;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -404,6 +405,19 @@ namespace GrafikaKomputerowa
             }
         }
 
+        private void Save_Click(object sender, EventArgs e)
+        {
+            SaveLoad.SaveToFile("figury.txt", shapes);
+        }
+
+        private void Load_Click(object sender, EventArgs e)
+        {
+            shapes = SaveLoad.LoadFromFile("figury.txt");
+            selectedShape = null;
+            RedrawAll(canvas);
+
+        }
+
         void RedrawAll(Bitmap bmp)
         {
             using (Graphics g = Graphics.FromImage(bmp))
@@ -439,6 +453,7 @@ namespace GrafikaKomputerowa
             if (InHandle(shape.End)) return HandleType.End;
             return HandleType.None;
         }
+
 
     }
 
@@ -510,6 +525,57 @@ namespace GrafikaKomputerowa
                 Math.Abs(End.Y - Start.Y));
 
             return bounds.Contains(p);
+        }
+
+        public override string ToString()
+        {
+            return $"{Type};{Start.X};{Start.Y};{End.X};{End.Y}";
+        }
+
+        public static Shape FromString(string line)
+        {
+            var parts = line.Split(';');
+            var type = (ShapeType)Enum.Parse(typeof(ShapeType), parts[0]);
+            var start = new Point(int.Parse(parts[1]), int.Parse(parts[2]));
+            var end = new Point(int.Parse(parts[3]), int.Parse(parts[4]));
+            return new Shape(type, start, end);
+        }
+
+    }
+
+
+
+    public static class SaveLoad
+    {
+        //odczyt
+        /*
+         shapes = ShapeSerializer.LoadFromFile("figury.txt");
+        selectedShape = null;
+        RedrawAll(canvas);
+        */
+        //Zapis
+        /*
+         ShapeSerializer.SaveToFile("figury.txt", shapes);
+         */
+        public static void SaveToFile(string path, List<Shape> shapes)
+        {
+            using (StreamWriter sw = new StreamWriter(path))
+            {
+                foreach (var shape in shapes)
+                    sw.WriteLine(shape.ToString());
+            }
+        }
+
+        public static List<Shape> LoadFromFile(string path)
+        {
+            var loadedShapes = new List<Shape>();
+
+            foreach (var line in File.ReadAllLines(path))
+            {
+                loadedShapes.Add(Shape.FromString(line));
+            }
+
+            return loadedShapes;
         }
     }
 

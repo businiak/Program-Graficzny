@@ -41,6 +41,8 @@
             this.xselect = new System.Windows.Forms.TextBox();
             this.yselect = new System.Windows.Forms.TextBox();
             this.ManualSelect = new System.Windows.Forms.Button();
+            this.Save = new System.Windows.Forms.Button();
+            this.Load = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -161,11 +163,33 @@
             this.ManualSelect.UseVisualStyleBackColor = true;
             this.ManualSelect.Click += new System.EventHandler(this.ManualSelect_Click);
             // 
+            // Save
+            // 
+            this.Save.Location = new System.Drawing.Point(723, 4);
+            this.Save.Name = "Save";
+            this.Save.Size = new System.Drawing.Size(75, 23);
+            this.Save.TabIndex = 13;
+            this.Save.Text = "Save";
+            this.Save.UseVisualStyleBackColor = true;
+            this.Save.Click += new System.EventHandler(this.Save_Click);
+            // 
+            // Load
+            // 
+            this.Load.Location = new System.Drawing.Point(723, 33);
+            this.Load.Name = "Load";
+            this.Load.Size = new System.Drawing.Size(75, 23);
+            this.Load.TabIndex = 14;
+            this.Load.Text = "Load";
+            this.Load.UseVisualStyleBackColor = true;
+            this.Load.Click += new System.EventHandler(this.Load_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(801, 601);
+            this.Controls.Add(this.Load);
+            this.Controls.Add(this.Save);
             this.Controls.Add(this.ManualSelect);
             this.Controls.Add(this.yselect);
             this.Controls.Add(this.xselect);
@@ -202,6 +226,8 @@
         private System.Windows.Forms.TextBox xselect;
         private System.Windows.Forms.TextBox yselect;
         private System.Windows.Forms.Button ManualSelect;
+        private System.Windows.Forms.Button Save;
+        private System.Windows.Forms.Button Load;
     }
 }
 
