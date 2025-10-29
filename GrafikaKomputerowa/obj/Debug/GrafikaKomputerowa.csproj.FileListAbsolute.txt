@@ -1,0 +1,10 @@
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\bin\Debug\GrafikaKomputerowa.exe.config
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\bin\Debug\GrafikaKomputerowa.exe
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\bin\Debug\GrafikaKomputerowa.pdb
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.csproj.AssemblyReference.cache
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.Form1.resources
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.Properties.Resources.resources
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.csproj.GenerateResource.cache
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.csproj.CoreCompileInputs.cache
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.exe
+C:\Users\kosmo\source\repos\GrafikaKomputerowa\GrafikaKomputerowa\obj\Debug\GrafikaKomputerowa.pdb
