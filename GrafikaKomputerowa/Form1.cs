@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -29,13 +32,32 @@ namespace GrafikaKomputerowa
         Point dragOffset;
         enum HandleType { None, Start, End }
         HandleType activeHandle = HandleType.None;
+        private float zoom = 1.0f;
+        private const float ZoomStep = 0.1f;
+        private const float MinZoom = 0.1f;
+        private const float MaxZoom = 100.0f;
+        private Bitmap originalImage = null;
 
         public Form1()
         {
             InitializeComponent();
+            pictureBox1.SizeMode = PictureBoxSizeMode.Normal; 
             canvas = new Bitmap(800, 600);
             pictureBox1.Image = canvas;
+
+            
+            pictureBox1.Width = canvas.Width;
+            pictureBox1.Height = canvas.Height;
+            panel1.AutoScroll = true;
+            panel1.Dock = DockStyle.Fill;
+            panel1.Controls.Add(pictureBox1);
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.Location = new Point(0, 0);
+            panel1.MouseWheel += Panel1_MouseWheel;
+            panel1.Focus();
+
         }
+
 
         /*private void DrawLine(int x0, int y0, int x1, int y1, Color color)
         {
@@ -212,7 +234,26 @@ namespace GrafikaKomputerowa
         }
 
 
+        private void ApplyZoom()
+        {
+            if (originalImage == null) return;
 
+            int newWidth = (int)(originalImage.Width * zoom);
+            int newHeight = (int)(originalImage.Height * zoom);
+
+            Bitmap zoomed = new Bitmap(newWidth, newHeight);
+
+            using (Graphics g = Graphics.FromImage(zoomed))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                g.DrawImage(originalImage, new Rectangle(0, 0, newWidth, newHeight));
+            }
+
+            pictureBox1.Image = zoomed;
+            pictureBox1.Width = zoomed.Width;
+            pictureBox1.Height = zoomed.Height;
+        }
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
 
@@ -407,16 +448,192 @@ namespace GrafikaKomputerowa
 
         private void Save_Click(object sender, EventArgs e)
         {
+            if(shapes.Count > 0) 
+            {
             SaveLoad.SaveToFile("figury.txt", shapes);
-        }
+            }
+            else
+            {
+                if (pictureBox1.Image == null)
+                {
+                    MessageBox.Show("Brak obrazu do zapisania.");
+                    return;
+                }
 
+                using (SaveFileDialog sfd = new SaveFileDialog())
+                {
+                    sfd.Filter = "Obrazy JPEG (*.jpg)|*.jpg";
+                    sfd.Title = "Zapisz obraz jako JPEG";
+
+                    if (sfd.ShowDialog() != DialogResult.OK)
+                        return;
+
+                    // okienko do wyboru jakości (0–100)
+                    long quality = 90;
+                    using (Form qualityDialog = new Form())
+                    {
+                        qualityDialog.Text = "Wybierz jakość JPEG (0–100)";
+                        qualityDialog.StartPosition = FormStartPosition.CenterParent;
+                        qualityDialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        qualityDialog.ClientSize = new Size(200, 80);
+                        qualityDialog.MinimizeBox = false;
+                        qualityDialog.MaximizeBox = false;
+
+                        var num = new NumericUpDown()
+                        {
+                            Minimum = 0,
+                            Maximum = 100,
+                            Value = 90,
+                            Dock = DockStyle.Top
+                        };
+
+                        var ok = new System.Windows.Forms.Button()
+                        {
+                            Text = "OK",
+                            Dock = DockStyle.Bottom
+                        };
+
+                        ok.Click += (s, _) => qualityDialog.DialogResult = DialogResult.OK;
+
+                        qualityDialog.Controls.Add(num);
+                        qualityDialog.Controls.Add(ok);
+
+                        if (qualityDialog.ShowDialog() == DialogResult.OK)
+                            quality = (long)num.Value;
+                    }
+
+                    // zapis JPEG z określoną jakością
+                    var encoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(c => c.FormatID == ImageFormat.Jpeg.Guid);
+                    var encParams = new EncoderParameters(1);
+                    encParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
+
+                    pictureBox1.Image.Save(sfd.FileName, encoder, encParams);
+                    MessageBox.Show($"Obraz zapisano jako JPEG ({quality}%).");
+                }
+            }
+        }
+        private void Panel1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if ((ModifierKeys & Keys.Control) != Keys.Control)
+                return; // tylko z Ctrl inaczej przewijanie działa normalnie
+
+            if (originalImage == null) return;
+
+            float oldZoom = zoom;
+
+            if (e.Delta > 0 && zoom < MaxZoom)
+                zoom += ZoomStep;
+            else if (e.Delta < 0 && zoom > MinZoom)
+                zoom -= ZoomStep;
+
+            //  Zabezpieczenie przed crashami 
+            if (zoom < 0.05f || zoom > 100f)
+            {
+                zoom = Math.Max(0.05f, Math.Min(zoom, 100f));
+                return;
+            }
+
+            
+            if (originalImage.Width * zoom < 1 || originalImage.Height * zoom < 1 ||  originalImage.Width * zoom > 9000 || originalImage.Height * zoom > 7000)
+                return; // zbyt duży – pomiń
+
+            if (Math.Abs(zoom - oldZoom) > 0.001f)
+                ApplyZoom();
+        }
         private void Load_Click(object sender, EventArgs e)
         {
-            shapes = SaveLoad.LoadFromFile("figury.txt");
-            selectedShape = null;
-            RedrawAll(canvas);
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Pliki figur (*.txt)|*.txt|Obrazy PPM (*.ppm)|*.ppm|Obrazy JPEG (*.jpg;*.jpeg)|*.jpg;*.jpeg|Wszystkie pliki (*.*)|*.*";
+                ofd.Title = "Wybierz plik do wczytania";
 
+                if (ofd.ShowDialog() != DialogResult.OK)
+                    return;
+
+                string extension = Path.GetExtension(ofd.FileName).ToLower();
+
+                try
+                {
+                    // FIGURY
+                    if (extension == ".txt")
+                    {
+                        shapes = SaveLoad.LoadFromFile(ofd.FileName);
+                        selectedShape = null;
+                        RedrawAll(canvas);
+                        MessageBox.Show("Wczytano figury z pliku: " + ofd.FileName);
+                        return;
+                    }
+
+                    Bitmap src;
+
+                    //  PPM 
+                    if (extension == ".ppm")
+                    {
+                        string magic;
+                        using (var fs = new FileStream(ofd.FileName, FileMode.Open, FileAccess.Read))
+                        using (var reader = new StreamReader(fs))
+                        {
+                            do
+                            {
+                                magic = reader.ReadLine()?.Trim();
+                            } while (magic != null && (magic.StartsWith("#") || string.IsNullOrWhiteSpace(magic)));
+                        }
+
+                        if (magic == "P3")
+                            src = SaveLoad.LoadPPM_P3(ofd.FileName);
+                        else if (magic == "P6")
+                            src = SaveLoad.LoadPPM_P6(ofd.FileName);
+                        else
+                            throw new Exception("Nieznany format PPM – oczekiwano P3 lub P6.");
+                    }
+                    //JPEG
+                    else if (extension == ".jpg" || extension == ".jpeg")
+                    {
+                        src = new Bitmap(ofd.FileName);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nieobsługiwany typ pliku.");
+                        return;
+                    }
+
+                    //Ustawienie obrazu
+                    pictureBox1.Image = src;
+                    pictureBox1.BackColor = Color.White;
+                    pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
+
+                    originalImage = new Bitmap(src); // zapamiętaj oryginał do zoomu
+                    zoom = 1.0f;
+                    if (src.Width < 50 && src.Height < 50)
+                    {
+                        // oblicz ile razy trzeba powiększyć, żeby był przynajmniej 300px szerokości
+                        float desiredWidth = 300f;
+                        float factor = desiredWidth / src.Width;
+
+                        
+                        zoom = Math.Min(factor, 100f);
+                    }
+                    else
+                    {
+                        zoom = 1.0f;
+                    }
+
+                    ApplyZoom(); // zastosuj początkowy zoom
+
+                    MessageBox.Show($"Wczytano obraz {src.Width}×{src.Height}.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Błąd podczas wczytywania pliku: " + ex.Message);
+                }
+            }
         }
+
+
+
+
+
+
 
         void RedrawAll(Bitmap bmp)
         {
@@ -577,7 +794,217 @@ namespace GrafikaKomputerowa
 
             return loadedShapes;
         }
+
+        public static Bitmap LoadPPM_P3(string path)
+        {
+            
+            string[] allLines = File.ReadAllLines(path);
+
+            List<string> tokens = new List<string>();
+
+            foreach (string line in allLines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                string clean = line.Split('#')[0]; // obcina komentarz jeśli jest
+                if (string.IsNullOrWhiteSpace(clean)) continue;
+
+                tokens.AddRange(clean.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            if (tokens.Count < 4)
+                throw new Exception("Niepoprawny nagłówek PPM — brak wymaganych informacji.");
+
+            // double walidacja, usun
+            if (tokens[0] != "P3")
+                throw new Exception("To nie jest poprawny plik PPM P3.");
+
+            if (!int.TryParse(tokens[1], out int width) ||
+                !int.TryParse(tokens[2], out int height) ||
+                !int.TryParse(tokens[3], out int maxColor))
+            {
+                throw new Exception("Niepoprawny format nagłówka (width/height/maxColor).");
+            }
+
+            if (maxColor <= 0)
+                throw new Exception("Niepoprawna wartość maxColor.");
+
+            // Dane RGB zaczynają się po 4. tokenie
+            int dataStart = 4;
+            int expected = width * height * 3;
+            if (tokens.Count - dataStart < expected)
+                throw new Exception($"Za mało danych RGB (oczekiwano {expected}, znaleziono {tokens.Count - dataStart}).");
+
+            // Utwórz bitmapę i przygotuj bufor
+            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+            Rectangle rect = new Rectangle(0, 0, width, height);
+            BitmapData bmpData = bmp.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+            int stride = bmpData.Stride;
+            byte[] pixels = new byte[stride * height];
+
+            int idx = dataStart;
+            for (int y = 0; y < height; y++)
+            {
+                int rowStart = y * stride;
+                for (int x = 0; x < width; x++)
+                {
+                    int rVal = int.Parse(tokens[idx++]);
+                    int gVal = int.Parse(tokens[idx++]);
+                    int bVal = int.Parse(tokens[idx++]);
+                    //SKALOWANIE LINIOWE KONWERSJA RGB WZOR R = (rVal * 255) /maxColor)
+                    int r = (int)Math.Round(rVal * 255.0 / maxColor);
+                    int g = (int)Math.Round(gVal * 255.0 / maxColor);
+                    int b = (int)Math.Round(bVal * 255.0 / maxColor);
+
+                    int pos = rowStart + x * 3;
+                    pixels[pos + 2] = (byte)Math.Min(Math.Max(0, r), 255);
+                    pixels[pos + 1] = (byte)Math.Min(Math.Max(0, g), 255);
+                    pixels[pos + 0] = (byte)Math.Min(Math.Max(0, b), 255);
+                }
+            }
+
+            System.Runtime.InteropServices.Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
+            bmp.UnlockBits(bmpData);
+
+            return bmp;
+        }
+
+
+
+
+        public static Bitmap LoadPPM_P6(string path)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                // Czytanie nagłówka P6
+                string magic = ReadToken(br);
+                if (magic != "P6")
+                    throw new Exception("Nieobsługiwany format pliku PPM (oczekiwano P6).");
+
+                int width = int.Parse(ReadToken(br));
+                int height = int.Parse(ReadToken(br));
+                int maxColor = int.Parse(ReadToken(br));
+
+                // Po nagłówku musi być jeden biały znak 
+                // szukamy pierwszy bajt danych (czyli niebiałą wartość)
+                int next;
+                do
+                {
+                    next = br.ReadByte();
+                } while (char.IsWhiteSpace((char)next));
+
+                // Cofamy o 1 bajt, bo już zaczęliśmy dane RGB
+                br.BaseStream.Seek(-1, SeekOrigin.Current);
+
+                // Liczba bajtów na próbkę (dla >255 to 2 bajty na kanał)
+                int bytesPerSample = (maxColor > 255) ? 2 : 1;
+
+                int totalBytes = width * height * 3 * bytesPerSample;
+                byte[] buffer = br.ReadBytes(totalBytes);
+                if (buffer.Length < totalBytes)
+                    throw new Exception("Niepełne dane RGB w pliku.");
+
+                // Przygotowanie bitmapy i zapis pikseli szybciej niż SetPixel
+                Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+                Rectangle rect = new Rectangle(0, 0, width, height);
+                BitmapData bmpData = bmp.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                int stride = bmpData.Stride;
+                byte[] pixels = new byte[stride * height];
+
+                int idx = 0;
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        int r, g, b;
+                        if (bytesPerSample == 1)
+                        {
+                            if (idx + 2 >= buffer.Length) break;
+                            r = buffer[idx++];
+                            g = buffer[idx++];
+                            b = buffer[idx++];
+                        }
+                        else
+                        {
+                            if (idx + 5 >= buffer.Length) break;
+                            r = (buffer[idx++] << 8) | buffer[idx++];
+                            g = (buffer[idx++] << 8) | buffer[idx++];
+                            b = (buffer[idx++] << 8) | buffer[idx++];
+                        }
+
+                        int pos = y * stride + x * 3;
+                        pixels[pos + 2] = (byte)ScaleColor(r, maxColor); // R
+                        pixels[pos + 1] = (byte)ScaleColor(g, maxColor); // G
+                        pixels[pos + 0] = (byte)ScaleColor(b, maxColor); // B
+                    }
+                }
+
+                System.Runtime.InteropServices.Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
+                bmp.UnlockBits(bmpData);
+
+                return bmp;
+            }
+        }
+
+
+        // Pomocnicze metody:
+
+        
+
+
+        private static string ReadToken(BinaryReader br)
+        {
+            List<byte> bytes = new List<byte>();
+            byte b;
+
+            // Pomijamy białe znaki i komentarze
+            while (br.BaseStream.Position < br.BaseStream.Length)
+            {
+                b = br.ReadByte();
+                if (b == '#')
+                {
+                    // Pomijamy komentarz do końca linii
+                    while (br.BaseStream.Position < br.BaseStream.Length && br.ReadByte() != '\n') ;
+                    continue;
+                }
+                if (!char.IsWhiteSpace((char)b))
+                {
+                    bytes.Add(b);
+                    break;
+                }
+            }
+
+            while (br.BaseStream.Position < br.BaseStream.Length)
+            {
+                b = br.ReadByte();
+                if (char.IsWhiteSpace((char)b))
+                    break;
+                bytes.Add(b);
+            }
+
+            if (bytes.Count == 0)
+                return null;
+
+            return Encoding.ASCII.GetString(bytes.ToArray());
+        }
+
+       
+
+        private static int ScaleColor(int value, int maxColor)
+        {
+            return (int)Math.Round(value * 255.0 / maxColor);
+        }
+
+
+
+
+
+
+
+
     }
+
+
 
 }
 
